@@ -1,0 +1,11 @@
+{
+  "name": "Leg Block — Training Tracker",
+  "short_name": "Leg Block",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#12151a",
+  "theme_color": "#12151a",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}

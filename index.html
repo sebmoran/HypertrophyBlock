@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+<title>Leg Block — Training Tracker</title>
+
+<!-- iOS "Add to Home Screen" support: runs fullscreen, no Safari chrome -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Leg Block" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#12151a" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="wordmark">Leg Block</span>
+    <span id="todayLabel" class="today-label"></span>
+  </div>
+</header>
+
+<main id="app" class="app">
+
+  <!-- READINESS BANNER (shown on Dashboard, but computed globally) -->
+
+  <section id="view-log" class="view">
+    <h1>Log a set</h1>
+    <p class="hint">One row per set. Pick the day, then the exercise — fields adjust to what that lift needs.</p>
+
+    <form id="liftForm" class="card form-card">
+      <div class="field-row">
+        <label>Date
+          <input type="date" name="entry_date" required />
+        </label>
+        <label>Day
+          <select name="day_type" required>
+            <option value="Sunday">Sunday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Thursday">Thursday</option>
+          </select>
+        </label>
+      </div>
+
+      <label>Exercise
+        <select name="exercise" id="exerciseSelect" required></select>
+      </label>
+
+      <div class="field-row three">
+        <label>Set #
+          <input type="number" name="set_number" min="1" step="1" required inputmode="numeric" />
+        </label>
+        <label>Load (kg)
+          <input type="number" name="load_kg" min="0" step="0.5" inputmode="decimal" />
+        </label>
+        <label>Reps
+          <input type="number" name="reps" min="0" step="1" required inputmode="numeric" />
+        </label>
+      </div>
+
+      <div class="field-row three">
+        <label>RIR
+          <input type="number" name="rir" min="0" step="0.5" inputmode="decimal" />
+        </label>
+        <label id="velocityField" class="conditional-field">Mean velocity (m/s)
+          <input type="number" name="velocity_ms" min="0" step="0.01" inputmode="decimal" />
+        </label>
+      </div>
+
+      <div class="field-row two" id="checkboxRow">
+        <label id="testSetField" class="conditional-field checkbox-field">
+          <input type="checkbox" name="is_test_set" />
+          Deload AMRAP test set
+        </label>
+        <label id="velocityCheckField" class="conditional-field checkbox-field">
+          <input type="checkbox" name="is_velocity_check" />
+          Velocity check single (pre-sets)
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary">Save set</button>
+    </form>
+
+    <div class="card">
+      <h2>Same-day extras</h2>
+      <p class="hint">One entry per session — technical score for the Olympic lift, plus how it felt.</p>
+
+      <form id="technicalForm" class="subform">
+        <div class="field-row three align-end">
+          <label>Date
+            <input type="date" name="entry_date" required />
+          </label>
+          <label>Lift
+            <select name="lift" required>
+              <option value="Snatch">Snatch</option>
+              <option value="Clean & Jerk">Clean &amp; Jerk</option>
+            </select>
+          </label>
+          <label>Technical score (1–5)
+            <input type="number" name="score" min="1" max="5" step="1" required inputmode="numeric" />
+          </label>
+        </div>
+        <button type="submit" class="btn-secondary">Save technical score</button>
+      </form>
+
+      <form id="ratingForm" class="subform">
+        <div class="field-row three align-end">
+          <label>Date
+            <input type="date" name="entry_date" required />
+          </label>
+          <label>Day
+            <select name="day_type" required>
+              <option value="Sunday">Sunday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Thursday">Thursday</option>
+            </select>
+          </label>
+        </div>
+        <div class="field-row three">
+          <label>Soreness (0–10)
+            <input type="number" name="soreness" min="0" max="10" step="1" required inputmode="numeric" />
+          </label>
+          <label>Session difficulty (0–10)
+            <input type="number" name="difficulty" min="0" max="10" step="1" required inputmode="numeric" />
+          </label>
+        </div>
+        <button type="submit" class="btn-secondary">Save session rating</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-cmj" class="view hidden">
+    <h1>CMJ test</h1>
+    <p class="hint">Sunday and Thursday, from week 3 onward. Enter whatever your force plate gives you — leave blank if a field isn't captured.</p>
+
+    <form id="cmjForm" class="card form-card">
+      <div class="field-row">
+        <label>Date
+          <input type="date" name="entry_date" required />
+        </label>
+        <label>Bodyweight on the day (kg)
+          <input type="number" name="bodyweight_kg" min="0" step="0.1" inputmode="decimal" />
+        </label>
+      </div>
+      <div class="field-row three">
+        <label>Jump height (cm)
+          <input type="number" name="jump_height_cm" min="0" step="0.1" inputmode="decimal" />
+        </label>
+        <label>Concentric impulse (N·s)
+          <input type="number" name="impulse_ns" min="0" step="0.1" required inputmode="decimal" />
+        </label>
+        <label>mRSI
+          <input type="number" name="mrsi" min="0" step="0.01" inputmode="decimal" />
+        </label>
+      </div>
+      <div class="field-row three">
+        <label>Concentric mean power (W)
+          <input type="number" name="concentric_mean_power_w" min="0" step="1" inputmode="numeric" />
+        </label>
+        <label>Peak force (N)
+          <input type="number" name="peak_force_n" min="0" step="1" inputmode="numeric" />
+        </label>
+        <label>Braking phase duration (ms)
+          <input type="number" name="braking_duration_ms" min="0" step="1" inputmode="numeric" />
+        </label>
+      </div>
+      <label>Countermovement depth (cm)
+        <input type="number" name="cm_depth_cm" min="0" step="0.1" inputmode="decimal" />
+      </label>
+      <button type="submit" class="btn-primary">Save CMJ test</button>
+    </form>
+  </section>
+
+  <section id="view-body" class="view hidden">
+    <h1>Body metrics</h1>
+    <p class="hint">As often as you like — daily AM is fine.</p>
+
+    <form id="bodyForm" class="card form-card">
+      <label>Date
+        <input type="date" name="entry_date" required />
+      </label>
+      <div class="field-row three">
+        <label>Weight (kg)
+          <input type="number" name="weight_kg" min="0" step="0.1" inputmode="decimal" />
+        </label>
+        <label>Waist (cm)
+          <input type="number" name="waist_cm" min="0" step="0.1" inputmode="decimal" />
+        </label>
+        <label>Thigh (cm)
+          <input type="number" name="thigh_cm" min="0" step="0.1" inputmode="decimal" />
+        </label>
+      </div>
+      <button type="submit" class="btn-primary">Save body metrics</button>
+    </form>
+  </section>
+
+  <section id="view-dashboard" class="view hidden">
+    <h1>Dashboard</h1>
+
+    <div id="readinessBanner" class="readiness-banner">
+      <div class="readiness-dot"></div>
+      <div>
+        <div class="readiness-title">Gathering baseline</div>
+        <div class="readiness-detail">Need a few more sessions before the readiness flag is meaningful.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Back squat — working load</h2>
+      <canvas id="squatChart" height="220"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Velocity check — fixed-load single</h2>
+      <canvas id="velocityCheckChart" height="220"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>CMJ — jump height &amp; mRSI</h2>
+      <canvas id="cmjChart" height="220"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>CMJ — force &amp; power</h2>
+      <canvas id="cmjForceChart" height="220"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Body metrics</h2>
+      <canvas id="bodyChart" height="220"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Session ratings</h2>
+      <canvas id="ratingChart" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Deload AMRAP tests</h2>
+      <table class="data-table" id="testSetTable">
+        <thead><tr><th>Date</th><th>Load (kg)</th><th>Reps</th><th>Est. 1RM</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Olympic lift technical score</h2>
+      <canvas id="technicalChart" height="180"></canvas>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-view="log">Log</button>
+  <button class="tab-btn" data-view="cmj">CMJ</button>
+  <button class="tab-btn" data-view="body">Body</button>
+  <button class="tab-btn" data-view="dashboard">Dashboard</button>
+</nav>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
