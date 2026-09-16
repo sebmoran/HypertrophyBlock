@@ -208,8 +208,6 @@ document.getElementById("cmjForm").addEventListener("submit", async (e) => {
     jump_height_cm: num("jump_height_cm"),
     impulse_ns: num("impulse_ns"),
     mrsi: num("mrsi"),
-    concentric_mean_power_w: num("concentric_mean_power_w"),
-    peak_force_n: num("peak_force_n"),
     braking_duration_ms: num("braking_duration_ms"),
     cm_depth_cm: num("cm_depth_cm"),
   };
@@ -365,8 +363,7 @@ function renderCmjCharts(cmj) {
       labels: dates,
       datasets: [
         { label: "Concentric impulse (N·s)", data: cmj.map((c) => c.impulse_ns), borderColor: CHART_COLORS.accent, tension: 0.25 },
-        { label: "Peak force (N)", data: cmj.map((c) => c.peak_force_n), borderColor: CHART_COLORS.muted, tension: 0.25 },
-        { label: "Concentric mean power (W)", data: cmj.map((c) => c.concentric_mean_power_w), borderColor: CHART_COLORS.amber, yAxisID: "y1", tension: 0.25 },
+        { label: "Braking phase (RFD or ms)", data: cmj.map((c) => c.braking_duration_ms), borderColor: CHART_COLORS.muted, yAxisID: "y1", tension: 0.25 },
       ],
     },
     options: baseOptions({
