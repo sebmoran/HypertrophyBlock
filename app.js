@@ -204,12 +204,10 @@ document.getElementById("cmjForm").addEventListener("submit", async (e) => {
   const num = (k) => (fd.get(k) ? Number(fd.get(k)) : null);
   const payload = {
     entry_date: fd.get("entry_date"),
-    bodyweight_kg: num("bodyweight_kg"),
     jump_height_cm: num("jump_height_cm"),
     impulse_ns: num("impulse_ns"),
     mrsi: num("mrsi"),
     braking_duration_ms: num("braking_duration_ms"),
-    cm_depth_cm: num("cm_depth_cm"),
   };
   const { error } = await sb.from("cmj_entries").insert(payload);
   if (error) return toast("Couldn't save CMJ test: " + error.message, true);
