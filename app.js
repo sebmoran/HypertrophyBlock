@@ -4,10 +4,16 @@ const sb = window.supabase.createClient(
   window.SUPABASE_CONFIG.anonKey
 );
 
-const EXERCISES_BY_DAY = {
-  Sunday: ["Snatch", "Back Squat", "RDL", "SL Leg Press"],
-  Tuesday: ["Clean & Jerk", "Front Squat", "Reverse Lunge", "Leg Curl"],
-  Thursday: ["Snatch", "Back Squat", "Clean DL", "Leg Extension"],
+const SQUAT_EXERCISE_BY_DAY = {
+  Sunday: "Back Squat",
+  Tuesday: "Front Squat",
+  Thursday: "Back Squat",
+};
+
+const ACCESSORY_EXERCISES_BY_DAY = {
+  Sunday: ["RDL", "SL Leg Press"],
+  Tuesday: ["Reverse Lunge", "Leg Curl"],
+  Thursday: ["Clean DL", "Leg Extension"],
 };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -39,84 +45,125 @@ function toast(msg, isError) {
   toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
 }
 
-// ---------- Log Set form ----------
-const dayTypeSelect = document.querySelector('#liftForm select[name="day_type"]');
-const exerciseSelect = document.getElementById("exerciseSelect");
-const velocityField = document.getElementById("velocityField");
-const testSetField = document.getElementById("testSetField");
-const velocityCheckField = document.getElementById("velocityCheckField");
-const REFERENCE_VELOCITY_LOAD_KG = 120;
+// ---------- Squat load form ----------
+const squatDaySelect = document.getElementById("squatDaySelect");
+const squatExerciseLabel = document.getElementById("squatExerciseLabel");
 
-function populateExercises() {
-  const day = dayTypeSelect.value;
-  exerciseSelect.innerHTML = "";
-  EXERCISES_BY_DAY[day].forEach((ex) => {
-    const opt = document.createElement("option");
-    opt.value = ex;
-    opt.textContent = ex;
-    exerciseSelect.appendChild(opt);
-  });
-  toggleConditionalFields();
+function updateSquatExerciseLabel() {
+  squatExerciseLabel.textContent = SQUAT_EXERCISE_BY_DAY[squatDaySelect.value];
 }
-
-function toggleConditionalFields() {
-  const isBackSquat = exerciseSelect.value === "Back Squat";
-  velocityField.classList.toggle("hidden", !isBackSquat);
-  testSetField.classList.toggle("hidden", !isBackSquat);
-  velocityCheckField.classList.toggle("hidden", !isBackSquat);
-  if (!isBackSquat) {
-    velocityField.querySelector("input").value = "";
-    testSetField.querySelector("input").checked = false;
-    velocityCheckField.querySelector("input").checked = false;
-  }
-}
-
-const testSetCheckbox = testSetField.querySelector("input");
-const velocityCheckCheckbox = velocityCheckField.querySelector("input");
-const setNumberInput = document.querySelector('#liftForm input[name="set_number"]');
-const loadInput = document.querySelector('#liftForm input[name="load_kg"]');
-const repsInput = document.querySelector('#liftForm input[name="reps"]');
-
-velocityCheckCheckbox.addEventListener("change", () => {
-  if (velocityCheckCheckbox.checked) {
-    testSetCheckbox.checked = false;
-    // Convenience defaults for the pre-sets reference single — all editable
-    if (!setNumberInput.value) setNumberInput.value = "0";
-    if (!loadInput.value) loadInput.value = String(REFERENCE_VELOCITY_LOAD_KG);
-    if (!repsInput.value) repsInput.value = "1";
-  }
-});
-testSetCheckbox.addEventListener("change", () => {
-  if (testSetCheckbox.checked) velocityCheckCheckbox.checked = false;
-});
-
-dayTypeSelect.addEventListener("change", populateExercises);
-exerciseSelect.addEventListener("change", toggleConditionalFields);
-populateExercises();
+squatDaySelect.addEventListener("change", updateSquatExerciseLabel);
+updateSquatExerciseLabel();
 
 document.querySelectorAll('input[name="entry_date"]').forEach((el) => (el.value = todayStr()));
 
-document.getElementById("liftForm").addEventListener("submit", async (e) => {
+document.getElementById("squatForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const dayType = fd.get("day_type");
+  const payload = {
+    entry_date: fd.get("entry_date"),
+    day_type: dayType,
+    exercise: SQUAT_EXERCISE_BY_DAY[dayType],
+    set_number: 1,
+    load_kg: Number(fd.get("load_kg")),
+    reps: null,
+    rir: null,
+    velocity_ms: null,
+    is_test_set: false,
+    is_velocity_check: false,
+  };
+  const { error } = await sb.from("lift_entries").insert(payload);
+  if (error) return toast("Couldn't save squat load: " + error.message, true);
+  toast("Squat load saved");
+  const dateVal = fd.get("entry_date");
+  e.target.reset();
+  document.querySelector('#squatForm input[name="entry_date"]').value = dateVal;
+  updateSquatExerciseLabel();
+});
+
+// ---------- Velocity check form ----------
+document.getElementById("velocityCheckForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const payload = {
+    entry_date: fd.get("entry_date"),
+    day_type: fd.get("day_type"),
+    exercise: "Back Squat",
+    set_number: 0,
+    load_kg: Number(fd.get("load_kg")),
+    reps: 1,
+    rir: null,
+    velocity_ms: Number(fd.get("velocity_ms")),
+    is_test_set: false,
+    is_velocity_check: true,
+  };
+  const { error } = await sb.from("lift_entries").insert(payload);
+  if (error) return toast("Couldn't save velocity check: " + error.message, true);
+  toast("Velocity check saved");
+  const dateVal = fd.get("entry_date");
+  e.target.reset();
+  document.querySelector('#velocityCheckForm input[name="entry_date"]').value = dateVal;
+  document.querySelector('#velocityCheckForm input[name="load_kg"]').value = "120";
+});
+
+// ---------- Deload AMRAP test form ----------
+document.getElementById("amrapForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const payload = {
+    entry_date: fd.get("entry_date"),
+    day_type: fd.get("day_type"),
+    exercise: "Back Squat",
+    set_number: 0,
+    load_kg: Number(fd.get("load_kg")),
+    reps: Number(fd.get("reps")),
+    rir: 0,
+    velocity_ms: null,
+    is_test_set: true,
+    is_velocity_check: false,
+  };
+  const { error } = await sb.from("lift_entries").insert(payload);
+  if (error) return toast("Couldn't save AMRAP test: " + error.message, true);
+  toast("AMRAP test saved");
+  const dateVal = fd.get("entry_date");
+  e.target.reset();
+  document.querySelector('#amrapForm input[name="entry_date"]').value = dateVal;
+});
+
+// ---------- Accessory sets form ----------
+const accessoryDaySelect = document.getElementById("accessoryDaySelect");
+const accessoryExerciseSelect = document.getElementById("accessoryExerciseSelect");
+
+function populateAccessoryExercises() {
+  const day = accessoryDaySelect.value;
+  accessoryExerciseSelect.innerHTML = "";
+  ACCESSORY_EXERCISES_BY_DAY[day].forEach((ex) => {
+    const opt = document.createElement("option");
+    opt.value = ex;
+    opt.textContent = ex;
+    accessoryExerciseSelect.appendChild(opt);
+  });
+}
+accessoryDaySelect.addEventListener("change", populateAccessoryExercises);
+populateAccessoryExercises();
+
+document.getElementById("accessoryForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
   const payload = {
     entry_date: fd.get("entry_date"),
     day_type: fd.get("day_type"),
     exercise: fd.get("exercise"),
-    set_number: Number(fd.get("set_number")),
-    load_kg: fd.get("load_kg") ? Number(fd.get("load_kg")) : null,
-    reps: Number(fd.get("reps")),
-    rir: fd.get("rir") ? Number(fd.get("rir")) : null,
-    velocity_ms: fd.get("velocity_ms") ? Number(fd.get("velocity_ms")) : null,
-    is_test_set: fd.get("is_test_set") === "on",
-    is_velocity_check: fd.get("is_velocity_check") === "on",
+    sets_completed: Number(fd.get("sets_completed")),
   };
-  const { error } = await sb.from("lift_entries").insert(payload);
-  if (error) return toast("Couldn't save set: " + error.message, true);
-  toast("Set saved");
+  const { error } = await sb.from("accessory_sets").insert(payload);
+  if (error) return toast("Couldn't save accessory sets: " + error.message, true);
+  toast("Accessory sets saved");
+  const dateVal = fd.get("entry_date");
   e.target.reset();
-  document.querySelector('#liftForm input[name="entry_date"]').value = todayStr();
-  document.querySelector('#liftForm input[name="set_number"]').focus();
+  document.querySelector('#accessoryForm input[name="entry_date"]').value = dateVal;
+  populateAccessoryExercises();
 });
 
 document.getElementById("technicalForm").addEventListener("submit", async (e) => {
@@ -220,12 +267,13 @@ function baseOptions(extra = {}) {
 }
 
 async function loadDashboard() {
-  const [lifts, cmj, body, ratings, technical] = await Promise.all([
+  const [lifts, cmj, body, ratings, technical, accessory] = await Promise.all([
     sb.from("lift_entries").select("*").order("entry_date"),
     sb.from("cmj_entries").select("*").order("entry_date"),
     sb.from("body_entries").select("*").order("entry_date"),
     sb.from("session_ratings").select("*").order("entry_date"),
     sb.from("technical_ratings").select("*").order("entry_date"),
+    sb.from("accessory_sets").select("*").order("entry_date", { ascending: false }),
   ]);
 
   renderSquatChart(lifts.data || []);
@@ -235,25 +283,31 @@ async function loadDashboard() {
   renderRatingChart(ratings.data || []);
   renderTestSetTable(lifts.data || []);
   renderTechnicalChart(technical.data || []);
+  renderAccessoryTable(accessory.data || []);
   renderReadiness(lifts.data || [], cmj.data || [], ratings.data || []);
 }
 
 function renderSquatChart(lifts) {
-  const backSquat = lifts.filter((l) => l.exercise === "Back Squat" && !l.is_test_set && !l.is_velocity_check);
-  const byDate = {};
-  backSquat.forEach((l) => {
-    if (!byDate[l.entry_date]) byDate[l.entry_date] = { loads: [] };
-    if (l.load_kg != null) byDate[l.entry_date].loads.push(l.load_kg);
+  const working = lifts.filter(
+    (l) => (l.exercise === "Back Squat" || l.exercise === "Front Squat") && !l.is_test_set && !l.is_velocity_check
+  );
+  const byExerciseDate = { "Back Squat": {}, "Front Squat": {} };
+  working.forEach((l) => {
+    const bucket = byExerciseDate[l.exercise];
+    if (!bucket[l.entry_date]) bucket[l.entry_date] = [];
+    if (l.load_kg != null) bucket[l.entry_date].push(l.load_kg);
   });
-  const dates = Object.keys(byDate).sort();
-  const avgLoad = dates.map((d) => avg(byDate[d].loads));
+  const allDates = [...new Set(working.map((l) => l.entry_date))].sort();
+  const backSquatLoad = allDates.map((d) => (byExerciseDate["Back Squat"][d] ? avg(byExerciseDate["Back Squat"][d]) : null));
+  const frontSquatLoad = allDates.map((d) => (byExerciseDate["Front Squat"][d] ? avg(byExerciseDate["Front Squat"][d]) : null));
 
   upsertChart("squatChart", {
     type: "line",
     data: {
-      labels: dates,
+      labels: allDates,
       datasets: [
-        { label: "Avg working load (kg)", data: avgLoad, borderColor: CHART_COLORS.accent, backgroundColor: CHART_COLORS.accent, tension: 0.25 },
+        { label: "Back squat (kg)", data: backSquatLoad, borderColor: CHART_COLORS.accent, backgroundColor: CHART_COLORS.accent, tension: 0.25, spanGaps: true },
+        { label: "Front squat (kg)", data: frontSquatLoad, borderColor: CHART_COLORS.amber, backgroundColor: CHART_COLORS.amber, tension: 0.25, spanGaps: true },
       ],
     },
     options: baseOptions(),
@@ -384,6 +438,16 @@ function renderTestSetTable(lifts) {
     const e1rm = t.load_kg && t.reps ? Math.round(t.load_kg * (1 + t.reps / 30)) : "—";
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${t.entry_date}</td><td>${t.load_kg ?? "—"}</td><td>${t.reps ?? "—"}</td><td>${e1rm}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAccessoryTable(accessory) {
+  const tbody = document.querySelector("#accessoryTable tbody");
+  tbody.innerHTML = "";
+  accessory.slice(0, 20).forEach((a) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${a.entry_date}</td><td>${a.exercise}</td><td>${a.sets_completed}</td>`;
     tbody.appendChild(tr);
   });
 }

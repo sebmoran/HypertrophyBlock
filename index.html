@@ -32,65 +32,110 @@
   <!-- READINESS BANNER (shown on Dashboard, but computed globally) -->
 
   <section id="view-log" class="view">
-    <h1>Log a set</h1>
-    <p class="hint">One row per set. Pick the day, then the exercise — fields adjust to what that lift needs.</p>
+    <h1>Log</h1>
 
-    <form id="liftForm" class="card form-card">
+    <form id="squatForm" class="card form-card">
+      <h2>Squat load</h2>
+      <p class="hint">One figure — average load across all sets that day.</p>
       <div class="field-row">
         <label>Date
           <input type="date" name="entry_date" required />
         </label>
         <label>Day
-          <select name="day_type" required>
+          <select name="day_type" id="squatDaySelect" required>
             <option value="Sunday">Sunday</option>
             <option value="Tuesday">Tuesday</option>
             <option value="Thursday">Thursday</option>
           </select>
         </label>
       </div>
+      <div class="field-row">
+        <div class="static-value">
+          <span class="static-label">Exercise</span>
+          <span id="squatExerciseLabel" class="static-text">Back Squat</span>
+        </div>
+        <label>Avg load (kg)
+          <input type="number" name="load_kg" min="0" step="0.5" required inputmode="decimal" />
+        </label>
+      </div>
+      <button type="submit" class="btn-primary">Save squat load</button>
+    </form>
 
-      <label>Exercise
-        <select name="exercise" id="exerciseSelect" required></select>
-      </label>
-
+    <form id="velocityCheckForm" class="card form-card">
+      <h2>Back squat — velocity check</h2>
+      <p class="hint">Fixed-load single, before working sets. Sunday/Thursday only.</p>
       <div class="field-row three">
-        <label>Set #
-          <input type="number" name="set_number" min="1" step="1" required inputmode="numeric" />
+        <label>Date
+          <input type="date" name="entry_date" required />
+        </label>
+        <label>Day
+          <select name="day_type" required>
+            <option value="Sunday">Sunday</option>
+            <option value="Thursday">Thursday</option>
+          </select>
         </label>
         <label>Load (kg)
-          <input type="number" name="load_kg" min="0" step="0.5" inputmode="decimal" />
-        </label>
-        <label>Reps
-          <input type="number" name="reps" min="0" step="1" required inputmode="numeric" />
+          <input type="number" name="load_kg" min="0" step="0.5" value="120" required inputmode="decimal" />
         </label>
       </div>
+      <label>Mean velocity (m/s)
+        <input type="number" name="velocity_ms" min="0" step="0.01" required inputmode="decimal" />
+      </label>
+      <button type="submit" class="btn-secondary">Save velocity check</button>
+    </form>
 
+    <form id="amrapForm" class="card form-card">
+      <h2>Deload AMRAP test</h2>
+      <p class="hint">End of every deload week. Sunday/Thursday only.</p>
       <div class="field-row three">
-        <label>RIR
-          <input type="number" name="rir" min="0" step="0.5" inputmode="decimal" />
+        <label>Date
+          <input type="date" name="entry_date" required />
         </label>
-        <label id="velocityField" class="conditional-field">Mean velocity (m/s)
-          <input type="number" name="velocity_ms" min="0" step="0.01" inputmode="decimal" />
+        <label>Day
+          <select name="day_type" required>
+            <option value="Sunday">Sunday</option>
+            <option value="Thursday">Thursday</option>
+          </select>
         </label>
-      </div>
-
-      <div class="field-row two" id="checkboxRow">
-        <label id="testSetField" class="conditional-field checkbox-field">
-          <input type="checkbox" name="is_test_set" />
-          Deload AMRAP test set
-        </label>
-        <label id="velocityCheckField" class="conditional-field checkbox-field">
-          <input type="checkbox" name="is_velocity_check" />
-          Velocity check single (pre-sets)
+        <label>Load (kg)
+          <input type="number" name="load_kg" min="0" step="0.5" required inputmode="decimal" />
         </label>
       </div>
+      <label>Reps (AMRAP)
+        <input type="number" name="reps" min="0" step="1" required inputmode="numeric" />
+      </label>
+      <button type="submit" class="btn-secondary">Save AMRAP test</button>
+    </form>
 
-      <button type="submit" class="btn-primary">Save set</button>
+    <form id="accessoryForm" class="card form-card">
+      <h2>Accessory sets</h2>
+      <p class="hint">Just how many sets you completed — no load needed.</p>
+      <div class="field-row">
+        <label>Date
+          <input type="date" name="entry_date" required />
+        </label>
+        <label>Day
+          <select name="day_type" id="accessoryDaySelect" required>
+            <option value="Sunday">Sunday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Thursday">Thursday</option>
+          </select>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>Exercise
+          <select name="exercise" id="accessoryExerciseSelect" required></select>
+        </label>
+        <label>Sets completed
+          <input type="number" name="sets_completed" min="0" step="1" required inputmode="numeric" />
+        </label>
+      </div>
+      <button type="submit" class="btn-secondary">Save accessory sets</button>
     </form>
 
     <div class="card">
       <h2>Same-day extras</h2>
-      <p class="hint">One entry per session — technical score for the Olympic lift, plus how it felt.</p>
+      <p class="hint">One entry per session — technical score for the Olympic lift (a 5 accounts for a heavier-than-usual day), plus how it felt.</p>
 
       <form id="technicalForm" class="subform">
         <div class="field-row three align-end">
@@ -213,7 +258,7 @@
     </div>
 
     <div class="card">
-      <h2>Back squat — working load</h2>
+      <h2>Squat — working load</h2>
       <canvas id="squatChart" height="220"></canvas>
     </div>
 
@@ -253,6 +298,14 @@
     <div class="card">
       <h2>Olympic lift technical score</h2>
       <canvas id="technicalChart" height="180"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Accessory work — recent sets</h2>
+      <table class="data-table" id="accessoryTable">
+        <thead><tr><th>Date</th><th>Exercise</th><th>Sets</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </section>
 
